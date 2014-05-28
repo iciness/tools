@@ -1,10 +1,14 @@
-package tools
+package getconfig
 
 import (
+	"bufio"
+	"bytes"
+	"io"
 	"os"
+	"strings"
 )
 
-func GetIni(conffile string) (cfg map[string]map[string]string, err error) {
+func Getconfigini(conffile string) (cfg map[string]map[string]string, err error) {
 	//实例化这个map
 	cfg = map[string]map[string]string{}
 	//打开这个ini文件
