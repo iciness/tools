@@ -5,8 +5,49 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 )
+
+func GetIDList(listFile string) (idList []string) {
+	//打开文件
+	f, _ := os.Open(listFile)
+	defer f.Close()
+	//读取文件到buffer里边
+	buf := bufio.NewReader(f)
+	for {
+		//按照换行读取每一行
+		l, err := buf.ReadString('\n')
+		//bom头处理
+		lb := []byte(l)
+		if len(lb) > 2 {
+			bom := []byte{0xef, 0xbb, 0xbf}
+			if bytes.Compare(lb[0:3], bom) == 0 {
+				l = string(lb[3:])
+			}
+		}
+		//相当于PHP的trim
+		line := strings.TrimSpace(l)
+		//判断退出循环
+		if err != nil {
+			if err != io.EOF {
+				//return err
+				panic(err)
+			}
+			if len(line) == 0 {
+				break
+			}
+		}
+
+		r := regexp.MustCompile("^\\d*$")
+		rs := r.FindStringSubmatch(line)
+		if len(rs) > 0 {
+			idList = append(idList, line)
+		}
+
+	}
+	return
+}
 
 func Getconfigini(conffile string) (cfg map[string]map[string]string, err error) {
 	//实例化这个map
