@@ -3,11 +3,23 @@ package getconfig
 import (
 	"bufio"
 	"bytes"
+	"encoding/csv"
 	"io"
 	"os"
 	"regexp"
 	"strings"
 )
+
+func GetCVS(cvsFile string) [][]string {
+	f, _ := os.Open(cvsFile)
+	defer f.Close()
+	r := csv.NewReader(f)
+	csvall, err := r.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+	return csvall
+}
 
 func GetIDList(listFile string) (idList []string) {
 	//打开文件

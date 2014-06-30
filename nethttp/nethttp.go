@@ -30,6 +30,10 @@ var Timeout int64 = 60
 var GCurCookieJar *cookiejar.Jar
 
 func init() {
+	NewCookie()
+}
+
+func NewCookie() {
 	GCurCookieJar, _ = cookiejar.New(nil)
 }
 
