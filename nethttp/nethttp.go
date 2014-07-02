@@ -105,19 +105,12 @@ func HttpGet(urlAddr string, proxyAddr string, httpHeader map[string]string) (in
 			if err != nil {
 				return 0, "", err
 			}
-			for {
-				buf := make([]byte, 1024)
-				n, err := reader.Read(buf)
 
-				if err != nil && err != io.EOF {
-					return 0, "", err
-				}
-
-				if n == 0 {
-					break
-				}
-				body += string(buf)
+			buf, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return 0, "", err
 			}
+			body = string(buf)
 		default:
 			bodyByte, err := ioutil.ReadAll(response.Body)
 			if err != nil {
