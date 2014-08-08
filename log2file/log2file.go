@@ -23,7 +23,7 @@ func (log2File *Log2File) Println(a ...interface{}) {
 		defer file.Close()
 		lf := log.New(file, "", log.LstdFlags)
 		lf.SetFlags(0)
-		lf.Printf(fmt.Sprintln(a))
+		lf.Printf(fmt.Sprintln(a...))
 	}
-	fmt.Println(a)
+	fmt.Println(a...)
 }
