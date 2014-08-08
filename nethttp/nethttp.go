@@ -15,46 +15,40 @@ import (
 	"time"
 )
 
-var HttpHeader = map[string]string{
-	"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-	"Accept-Encoding": "gzip, deflate",
-	"Accept-Language": "zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3",
-	"Connection":      "keep-alive",
-	"Host":            "",
-	"Referer":         "",
-	"User-Agent":      "Mozilla/5.0 (Linux; U; Android 4.2.2; HTC One Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.90 Mobile Safari/537.36",
+type NetHttp struct {
+	Url      string
+	Proxy    string
+	PostData string
+	Header   map[string]string
+	Cookie   *cookiejar.Jar
+	Timeout  int
 }
 
-var Timeout int64 = 60
-
-var GCurCookieJar *cookiejar.Jar
-
-func init() {
-	NewCookie()
-}
-
-func NewCookie() {
-	GCurCookieJar, _ = cookiejar.New(nil)
-}
-
-func dialTimeout(network, addr string) (net.Conn, error) {
-	deadline := time.Now().Add(time.Duration(Timeout*5) * time.Second)
-	c, err := net.DialTimeout(network, addr, time.Second*time.Duration(Timeout))
-	if err != nil {
-		return nil, err
+func NewNetHttp() *NetHttp {
+	cj, _ := cookiejar.New(nil)
+	header := map[string]string{
+		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		"Accept-Encoding": "gzip, deflate",
+		"Accept-Language": "zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3",
+		"Connection":      "keep-alive",
+		//"Host":            "",
+		//"Referer":         "",
+		"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.2.2; HTC One Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.90 Mobile Safari/537.36",
 	}
-	c.SetDeadline(deadline)
-	return c, nil
+	return &NetHttp{"", "", "", header, cj, 60}
 }
 
-func HttpGet(urlAddr string, proxyAddr string, httpHeader map[string]string) (int64, string, error) {
+func (netHttp *NetHttp) NewCookie() {
+	netHttp.Cookie, _ = cookiejar.New(nil)
+}
 
+func (netHttp *NetHttp) HttpGet() (int64, string, error) {
 	ts := time.Now().UnixNano()
 
 	var client *http.Client
 
-	if proxyAddr != "" {
-		proxy, err := url.Parse(proxyAddr)
+	if netHttp.Proxy != "" {
+		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
 			return 0, "", err
 		}
@@ -62,26 +56,42 @@ func HttpGet(urlAddr string, proxyAddr string, httpHeader map[string]string) (in
 		client = &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxy),
-				Dial:  dialTimeout,
+				Dial: func(network, addr string) (net.Conn, error) {
+					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
+					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
+					if err != nil {
+						return nil, err
+					}
+					c.SetDeadline(deadline)
+					return c, nil
+				},
 			},
-			Jar: GCurCookieJar,
+			Jar: netHttp.Cookie,
 		}
 	} else {
 		client = &http.Client{
 			Transport: &http.Transport{
-				Dial: dialTimeout,
+				Dial: func(network, addr string) (net.Conn, error) {
+					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
+					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
+					if err != nil {
+						return nil, err
+					}
+					c.SetDeadline(deadline)
+					return c, nil
+				},
 			},
-			Jar: GCurCookieJar,
+			Jar: netHttp.Cookie,
 		}
 	}
 
-	reqest, err := http.NewRequest("GET", urlAddr, nil)
+	reqest, err := http.NewRequest("GET", netHttp.Url, nil)
 
 	if err != nil {
 		return 0, "", err
 	}
 
-	for key, value := range HttpHeader {
+	for key, value := range netHttp.Header {
 		reqest.Header.Add(key, value)
 	}
 
@@ -125,13 +135,13 @@ func HttpGet(urlAddr string, proxyAddr string, httpHeader map[string]string) (in
 	return (te - ts) / 1000000, "", errors.New(fmt.Sprintf("response.StatusCode:%d", response.StatusCode))
 }
 
-func HttpPost(urlAddr string, proxyAddr string, httpHeader map[string]string, postData string) (int64, string, error) {
+func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 	ts := time.Now().UnixNano()
 
 	var client *http.Client
 
-	if proxyAddr != "" {
-		proxy, err := url.Parse(proxyAddr)
+	if netHttp.Proxy != "" {
+		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
 			return 0, "", err
 		}
@@ -139,30 +149,46 @@ func HttpPost(urlAddr string, proxyAddr string, httpHeader map[string]string, po
 		client = &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxy),
-				Dial:  dialTimeout,
+				Dial: func(network, addr string) (net.Conn, error) {
+					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
+					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
+					if err != nil {
+						return nil, err
+					}
+					c.SetDeadline(deadline)
+					return c, nil
+				},
 			},
-			Jar: GCurCookieJar,
+			Jar: netHttp.Cookie,
 		}
 	} else {
 		client = &http.Client{
 			Transport: &http.Transport{
-				Dial: dialTimeout,
+				Dial: func(network, addr string) (net.Conn, error) {
+					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
+					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
+					if err != nil {
+						return nil, err
+					}
+					c.SetDeadline(deadline)
+					return c, nil
+				},
 			},
-			Jar: GCurCookieJar,
+			Jar: netHttp.Cookie,
 		}
 	}
 
-	reqest, err := http.NewRequest("POST", urlAddr, strings.NewReader(postData))
+	reqest, err := http.NewRequest("POST", netHttp.Url, strings.NewReader(netHttp.PostData))
 
 	if err != nil {
 		return 0, "", err
 	}
 
-	for key, value := range HttpHeader {
+	for key, value := range netHttp.Header {
 		reqest.Header.Add(key, value)
 	}
 
-	reqest.Header.Add("Content-Length", strconv.Itoa(len(postData)))
+	reqest.Header.Add("Content-Length", strconv.Itoa(len(netHttp.PostData)))
 	reqest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := client.Do(reqest)
