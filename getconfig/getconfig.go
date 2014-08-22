@@ -10,20 +10,26 @@ import (
 	"strings"
 )
 
-func GetCVS(cvsFile string) [][]string {
-	f, _ := os.Open(cvsFile)
+func GetCVS(cvsFile string) (csvall [][]string, err error) {
+	f, err := os.Open(cvsFile)
+	if err != nil {
+		return
+	}
 	defer f.Close()
 	r := csv.NewReader(f)
-	csvall, err := r.ReadAll()
+	csvall, err = r.ReadAll()
 	if err != nil {
-		panic(err)
+		return
 	}
-	return csvall
+	return
 }
 
-func GetIDList(listFile string) (idList []string) {
+func GetIDList(listFile string) (idList []string, err error) {
 	//打开文件
-	f, _ := os.Open(listFile)
+	f, err := os.Open(listFile)
+	if err != nil {
+		return
+	}
 	defer f.Close()
 	//读取文件到buffer里边
 	buf := bufio.NewReader(f)
@@ -44,7 +50,7 @@ func GetIDList(listFile string) (idList []string) {
 		if err != nil {
 			if err != io.EOF {
 				//return err
-				panic(err)
+				return nil, err
 			}
 			if len(line) == 0 {
 				break
@@ -90,7 +96,7 @@ func Getconfigini(conffile string) (cfg map[string]map[string]string, err error)
 		if err != nil {
 			if err != io.EOF {
 				//return err
-				panic(err)
+				return nil, err
 			}
 			if len(line) == 0 {
 				break
