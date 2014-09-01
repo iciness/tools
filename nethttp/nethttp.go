@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -184,12 +183,15 @@ func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 		return 0, "", err
 	}
 
+	if netHttp.Header["Content-Type"] == "" {
+		netHttp.Header["Content-Type"] = "application/x-www-form-urlencoded"
+	}
+
+	netHttp.Header["Content-Length"] = strconv.Itoa(len([]byte(netHttp.PostData)))
+
 	for key, value := range netHttp.Header {
 		reqest.Header.Add(key, value)
 	}
-
-	reqest.Header.Add("Content-Length", strconv.Itoa(len(netHttp.PostData)))
-	reqest.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	response, err := client.Do(reqest)
 
@@ -209,23 +211,14 @@ func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 		case "gzip":
 			reader, err := gzip.NewReader(response.Body)
 			if err != nil {
-				if err != nil {
-					return 0, "", err
-				}
+				return 0, "", err
 			}
-			for {
-				buf := make([]byte, 1024)
-				n, err := reader.Read(buf)
 
-				if err != nil && err != io.EOF {
-					return 0, "", err
-				}
-
-				if n == 0 {
-					break
-				}
-				body += string(buf)
+			buf, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return 0, "", err
 			}
+			body = string(buf)
 		default:
 			bodyByte, err := ioutil.ReadAll(response.Body)
 			if err != nil {
