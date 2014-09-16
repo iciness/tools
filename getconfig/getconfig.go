@@ -57,7 +57,7 @@ func GetIDList(listFile string) (idList []string, err error) {
 			}
 		}
 
-		r := regexp.MustCompile("^\\d*$")
+		r := regexp.MustCompile("^\\d+$")
 		rs := r.FindStringSubmatch(line)
 		if len(rs) > 0 {
 			idList = append(idList, line)
