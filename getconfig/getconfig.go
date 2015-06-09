@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-func GetCVS(cvsFile string) (csvall [][]string, err error) {
-	f, err := os.Open(cvsFile)
+func GetCSV(csvFile string) (csvall [][]string, err error) {
+	f, err := os.Open(csvFile)
 	if err != nil {
 		return
 	}
