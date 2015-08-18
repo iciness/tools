@@ -24,6 +24,45 @@ func GetCSV(csvFile string) (csvall [][]string, err error) {
 	return
 }
 
+func GetLineList(listFile string) (lineList []string, err error) {
+	//打开文件
+	f, err := os.Open(listFile)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	//读取文件到buffer里边
+	buf := bufio.NewReader(f)
+	for {
+		//按照换行读取每一行
+		l, err := buf.ReadString('\n')
+		//bom头处理
+		lb := []byte(l)
+		if len(lb) > 2 {
+			bom := []byte{0xef, 0xbb, 0xbf}
+			if bytes.Compare(lb[0:3], bom) == 0 {
+				l = string(lb[3:])
+			}
+		}
+		//相当于PHP的trim
+		line := strings.TrimSpace(l)
+		//判断退出循环
+		if err != nil {
+			if err != io.EOF {
+				//return err
+				return nil, err
+			}
+			if len(line) == 0 {
+				break
+			}
+		}
+
+		lineList = append(lineList, line)
+
+	}
+	return
+}
+
 func GetIDList(listFile string) (idList []string, err error) {
 	//打开文件
 	f, err := os.Open(listFile)

@@ -23,6 +23,8 @@ type NetHttp struct {
 	Timeout  int
 }
 
+var timeout int
+
 func NewNetHttp() *NetHttp {
 	cj, _ := cookiejar.New(nil)
 	header := map[string]string{
@@ -41,11 +43,35 @@ func (netHttp *NetHttp) NewCookie() {
 	netHttp.Cookie, _ = cookiejar.New(nil)
 }
 
+func inheritHeaderCheckRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if len(via) > 0 {
+		for attr, val := range via[len(via)-1].Header {
+			if _, ok := req.Header[attr]; !ok {
+				req.Header[attr] = val
+			}
+		}
+	}
+	return nil
+}
+
+func setTimeoutDial(network, addr string) (net.Conn, error) {
+	deadline := time.Now().Add(time.Duration(timeout*5) * time.Second)
+	c, err := net.DialTimeout(network, addr, time.Second*time.Duration(timeout))
+	if err != nil {
+		return nil, err
+	}
+	c.SetDeadline(deadline)
+	return c, nil
+}
+
 func (netHttp *NetHttp) HttpGet() (int64, string, error) {
 	ts := time.Now().UnixNano()
 
 	var client *http.Client
-
+	timeout = netHttp.Timeout
 	if netHttp.Proxy != "" {
 		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
@@ -55,32 +81,18 @@ func (netHttp *NetHttp) HttpGet() (int64, string, error) {
 		client = &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxy),
-				Dial: func(network, addr string) (net.Conn, error) {
-					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
-					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
-					if err != nil {
-						return nil, err
-					}
-					c.SetDeadline(deadline)
-					return c, nil
-				},
+				Dial:  setTimeoutDial,
 			},
-			Jar: netHttp.Cookie,
+			CheckRedirect: inheritHeaderCheckRedirect,
+			Jar:           netHttp.Cookie,
 		}
 	} else {
 		client = &http.Client{
 			Transport: &http.Transport{
-				Dial: func(network, addr string) (net.Conn, error) {
-					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
-					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
-					if err != nil {
-						return nil, err
-					}
-					c.SetDeadline(deadline)
-					return c, nil
-				},
+				Dial: setTimeoutDial,
 			},
-			Jar: netHttp.Cookie,
+			CheckRedirect: inheritHeaderCheckRedirect,
+			Jar:           netHttp.Cookie,
 		}
 	}
 
@@ -138,7 +150,7 @@ func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 	ts := time.Now().UnixNano()
 
 	var client *http.Client
-
+	timeout = netHttp.Timeout
 	if netHttp.Proxy != "" {
 		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
@@ -148,32 +160,18 @@ func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 		client = &http.Client{
 			Transport: &http.Transport{
 				Proxy: http.ProxyURL(proxy),
-				Dial: func(network, addr string) (net.Conn, error) {
-					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
-					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
-					if err != nil {
-						return nil, err
-					}
-					c.SetDeadline(deadline)
-					return c, nil
-				},
+				Dial:  setTimeoutDial,
 			},
-			Jar: netHttp.Cookie,
+			CheckRedirect: inheritHeaderCheckRedirect,
+			Jar:           netHttp.Cookie,
 		}
 	} else {
 		client = &http.Client{
 			Transport: &http.Transport{
-				Dial: func(network, addr string) (net.Conn, error) {
-					deadline := time.Now().Add(time.Duration(netHttp.Timeout*5) * time.Second)
-					c, err := net.DialTimeout(network, addr, time.Second*time.Duration(netHttp.Timeout))
-					if err != nil {
-						return nil, err
-					}
-					c.SetDeadline(deadline)
-					return c, nil
-				},
+				Dial: setTimeoutDial,
 			},
-			Jar: netHttp.Cookie,
+			CheckRedirect: inheritHeaderCheckRedirect,
+			Jar:           netHttp.Cookie,
 		}
 	}
 
