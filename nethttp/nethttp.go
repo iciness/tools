@@ -2,6 +2,7 @@ package nethttp
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -15,13 +16,14 @@ import (
 )
 
 type NetHttp struct {
-	Url            string
-	Proxy          string
-	PostData       string
-	Header         map[string]string
-	Cookie         *cookiejar.Jar
-	Timeout        int
-	RedirectHeader bool
+	Url                string
+	Proxy              string
+	PostData           string
+	Header             map[string]string
+	Cookie             *cookiejar.Jar
+	Timeout            int
+	RedirectHeader     bool
+	InsecureSkipVerify bool
 }
 
 var timeout int
@@ -37,7 +39,7 @@ func NewNetHttp() *NetHttp {
 		//"Referer":         "",
 		"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.2.2; HTC One Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.90 Mobile Safari/537.36",
 	}
-	return &NetHttp{"", "", "", header, cj, 60, true}
+	return &NetHttp{"", "", "", header, cj, 60, true, false}
 }
 
 func (netHttp *NetHttp) NewCookie() {
@@ -73,47 +75,31 @@ func (netHttp *NetHttp) HttpGet() (int64, string, error) {
 
 	var client *http.Client
 	timeout = netHttp.Timeout
+
+	transport := &http.Transport{}
+	transport.Dial = setTimeoutDial
+
 	if netHttp.Proxy != "" {
 		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
 			return 0, "", err
 		}
 
-		if netHttp.RedirectHeader {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxy),
-					Dial:  setTimeoutDial,
-				},
-				CheckRedirect: inheritHeaderCheckRedirect,
-				Jar:           netHttp.Cookie,
-			}
-		} else {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxy),
-					Dial:  setTimeoutDial,
-				},
-				Jar: netHttp.Cookie,
-			}
-		}
-	} else {
-		if netHttp.RedirectHeader {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Dial: setTimeoutDial,
-				},
-				CheckRedirect: inheritHeaderCheckRedirect,
-				Jar:           netHttp.Cookie,
-			}
-		} else {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Dial: setTimeoutDial,
-				},
-				Jar: netHttp.Cookie,
-			}
-		}
+		transport.Proxy = http.ProxyURL(proxy)
+
+	}
+
+	if netHttp.InsecureSkipVerify {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	client = &http.Client{
+		Transport: transport,
+		Jar:       netHttp.Cookie,
+	}
+
+	if netHttp.RedirectHeader {
+		client.CheckRedirect = inheritHeaderCheckRedirect
 	}
 
 	reqest, err := http.NewRequest("GET", netHttp.Url, nil)
@@ -171,46 +157,31 @@ func (netHttp *NetHttp) HttpPost() (int64, string, error) {
 
 	var client *http.Client
 	timeout = netHttp.Timeout
+
+	transport := &http.Transport{}
+	transport.Dial = setTimeoutDial
+
 	if netHttp.Proxy != "" {
 		proxy, err := url.Parse(netHttp.Proxy)
 		if err != nil {
 			return 0, "", err
 		}
-		if netHttp.RedirectHeader {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxy),
-					Dial:  setTimeoutDial,
-				},
-				CheckRedirect: inheritHeaderCheckRedirect,
-				Jar:           netHttp.Cookie,
-			}
-		} else {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(proxy),
-					Dial:  setTimeoutDial,
-				},
-				Jar: netHttp.Cookie,
-			}
-		}
-	} else {
-		if netHttp.RedirectHeader {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Dial: setTimeoutDial,
-				},
-				CheckRedirect: inheritHeaderCheckRedirect,
-				Jar:           netHttp.Cookie,
-			}
-		} else {
-			client = &http.Client{
-				Transport: &http.Transport{
-					Dial: setTimeoutDial,
-				},
-				Jar: netHttp.Cookie,
-			}
-		}
+
+		transport.Proxy = http.ProxyURL(proxy)
+
+	}
+
+	if netHttp.InsecureSkipVerify {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	client = &http.Client{
+		Transport: transport,
+		Jar:       netHttp.Cookie,
+	}
+
+	if netHttp.RedirectHeader {
+		client.CheckRedirect = inheritHeaderCheckRedirect
 	}
 
 	reqest, err := http.NewRequest("POST", netHttp.Url, strings.NewReader(netHttp.PostData))
