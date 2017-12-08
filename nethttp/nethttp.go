@@ -31,13 +31,13 @@ var timeout int
 func NewNetHttp() *NetHttp {
 	cj, _ := cookiejar.New(nil)
 	header := map[string]string{
-		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-		"Accept-Encoding": "gzip, deflate",
-		"Accept-Language": "zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3",
-		"Connection":      "keep-alive",
-		//"Host":            "",
-		//"Referer":         "",
-		"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.2.2; HTC One Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.90 Mobile Safari/537.36",
+	//"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+	//"Accept-Encoding": "gzip, deflate",
+	//"Accept-Language": "zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3",
+	//"Connection":      "keep-alive",
+	//"Host":            "",
+	//"Referer":         "",
+	//"User-Agent": "Mozilla/5.0 (Linux; U; Android 4.2.2; HTC One Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/27.0.1453.90 Mobile Safari/537.36",
 	}
 	return &NetHttp{"", "", "", header, cj, 60, true, false}
 }
